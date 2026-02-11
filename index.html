@@ -3,32 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aventura AI Real Estate</title>
+    <title>Aventura AI Real Estate | Adonait</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #1a1a1a; --accent: #c5a059; }
         body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f4f4f4; }
-        #ui-panel { width: 350px; background: white; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; }
-        .search-box { padding: 15px; border-bottom: 1px solid #eee; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; margin-bottom: 5px; }
-        #results { flex-grow: 1; overflow-y: auto; padding: 10px; }
-        #map { flex-grow: 1; height: 100vh; background: #e0e0e0; }
-        .card { background: white; border-radius: 10px; padding: 10px; margin-bottom: 10px; border: 1px solid #eee; cursor: pointer; }
-        .card img { width: 100%; border-radius: 5px; height: 140px; object-fit: cover; }
-        .price { color: var(--accent); font-weight: 600; font-size: 1.1rem; }
+        #ui-panel { width: 360px; background: white; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .header { background: var(--primary); color: white; padding: 25px; text-align: center; border-bottom: 4px solid var(--accent); }
+        .search-box { padding: 20px; border-bottom: 1px solid #eee; }
+        input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        button:hover { background: #a68549; }
+        #results { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        #map { flex-grow: 1; background: #ddd; }
+        .card { background: white; border-radius: 12px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card img { width: 100%; border-radius: 8px; height: 150px; object-fit: cover; margin-bottom: 10px; }
+        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
-    <div class="header"><h2 style="margin:0">AVENTURA AI</h2></div>
-    <div class="search-box">
-        <input type="text" id="ai-input" placeholder="¿Qué buscas en Aventura?">
-        <button id="btn-buscar">BUSCAR PROPIEDADES</button>
+    <div class="header">
+        <h2 style="margin:0; letter-spacing: 1px;">AVENTURA AI</h2>
+        <small style="color: #ccc;">SISTEMA MLS EN VIVO</small>
     </div>
-    <div id="results"><p style="text-align:center;color:#999">Presiona el botón para cargar.</p></div>
+    <div class="search-box">
+        <input type="text" id="ai-input" placeholder="¿Qué buscas hoy?">
+        <button id="btn-buscar">CARGAR PROPIEDADES</button>
+    </div>
+    <div id="results">
+        <p style="text-align:center; color:#999; margin-top:50px;">Haz clic en el botón para buscar en Aventura.</p>
+    </div>
 </div>
 
 <div id="map"></div>
@@ -37,52 +43,66 @@
     const MLS_TOKEN = '5e8c97e2f82bfeedf093b27b03c8acbd';
     let map, markers = [];
 
-    // Esta función la llama Google Maps al cargar
     function initMap() {
-        console.log("Mapa cargando...");
         map = new google.maps.Map(document.getElementById("map"), {
             center: { lat: 25.9565, lng: -80.1392 },
-            zoom: 14
+            zoom: 14,
+            mapId: 'da9b6acc1483c1e535943ad2'
         });
     }
 
+    // Datos reales de respaldo por si el MLS falla
+    const demoData = [
+        { name: "Echo Aventura", price: 2500000, addr: "3250 NE 188th St, Aventura, FL", lat: 25.9491, lng: -80.1360, img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400" },
+        { name: "Turnberry Village", price: 850000, addr: "20000 E Country Club Dr, Aventura, FL", lat: 25.9623, lng: -80.1275, img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=400" },
+        { name: "The Peninsula", price: 1200000, addr: "3201 NE 183rd St, Aventura, FL", lat: 25.9459, lng: -80.1370, img: "https://images.unsplash.com/photo-1600607687940-c524774d3989?auto=format&fit=crop&w=400" }
+    ];
+
     async function fetchMLS() {
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "Cargando...";
+        resultsDiv.innerHTML = "Conectando con Miami MLS...";
         
-        // Limpiar marcadores previos
-        markers.forEach(m => m.setMap(null));
-        markers = [];
-
         const filter = encodeURIComponent("(City eq 'Aventura' or PostalCode eq '33180') and MlsStatus eq 'Active'");
-        const url = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=${filter}&$top=15`;
+        const url = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=${filter}&$top=10`;
         
         try {
             const resp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
             const json = await resp.json();
             const data = JSON.parse(json.contents);
 
-            resultsDiv.innerHTML = "";
-            data.value.forEach(prop => {
-                const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
-                if(!isNaN(pos.lat)) {
-                    const marker = new google.maps.Marker({ position: pos, map: map });
-                    markers.push(marker);
-                    
-                    const card = document.createElement('div');
-                    card.className = 'card';
-                    card.innerHTML = `
-                        <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/300x150'}">
-                        <div class="price">$${prop.ListPrice.toLocaleString()}</div>
-                        <div style="font-size:12px">${prop.UnparsedAddress}</div>
-                    `;
-                    card.onclick = () => map.panTo(pos);
-                    resultsDiv.appendChild(card);
-                }
-            });
+            if (!data.value || data.value.length === 0) throw new Error("No data");
+            renderProps(data.value);
         } catch (e) {
-            resultsDiv.innerHTML = "Error al conectar con MLS.";
+            console.log("Cargando modo demo por restricción de conexión.");
+            renderProps(demoData, true);
         }
+    }
+
+    function renderProps(props, isDemo = false) {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = isDemo ? "<p style='font-size:10px; color:orange; text-align:center;'>Modo Demo (Esperando aprobación MLS)</p>" : "";
+        
+        markers.forEach(m => m.setMap(null));
+        markers = [];
+
+        props.forEach(p => {
+            const lat = p.lat || parseFloat(p.Latitude);
+            const lng = p.lng || parseFloat(p.Longitude);
+            const pos = { lat, lng };
+
+            const marker = new google.maps.Marker({ position: pos, map: map, title: p.name || p.UnparsedAddress });
+            markers.push(marker);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <img src="${p.img || p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/300x150'}">
+                <div class="price">$${(p.price || p.ListPrice).toLocaleString()}</div>
+                <div style="font-size:12px; font-weight:600;">${p.name || p.UnparsedAddress}</div>
+            `;
+            card.onclick = () => { map.setZoom(17); map.panTo(pos); };
+            resultsDiv.appendChild(card);
+        });
     }
 
     window.onload = () => {
