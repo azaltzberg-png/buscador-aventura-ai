@@ -13,33 +13,35 @@
         .search-box { padding: 20px; background: #fff; border-bottom: 1px solid #eee; }
         input { width: 100%; padding: 14px; border: 2px solid #f0f0f0; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; }
         .btn-group { display: flex; gap: 5px; }
-        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: 0.3s; }
         .btn-ai { background: var(--accent); color: white; flex: 2; }
         .btn-reset { background: #eee; color: #666; }
         #results { flex-grow: 1; overflow-y: auto; padding: 15px; }
-        #map { flex-grow: 1; width: 100%; height: 100vh; background: #ddd; }
-        .card { background: white; border-radius: 15px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; }
-        .card img { width: 100%; border-radius: 10px; height: 160px; object-fit: cover; }
-        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; }
+        #map { flex-grow: 1; background: #e5e7eb; }
+        .card { background: white; border-radius: 15px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; transition: 0.3s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 10px; height: 160px; object-fit: cover; background: #f0f0f0; }
+        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; margin: 5px 0; }
+        #ai-status { font-size: 10px; text-align: center; margin-top: 8px; color: #888; font-style: italic; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
     <div class="header">
-        <h2 style="margin:0; font-size: 1.2rem;">AVENTURA AI</h2>
+        <h2 style="margin:0; font-size: 1.3rem;">AVENTURA AI</h2>
         <small>Real Estate Intelligence</small>
     </div>
     <div class="search-box">
-        <input type="text" id="ai-input" placeholder="Ej: Condos de 3 hab bajo $1M">
+        <input type="text" id="ai-input" placeholder="Ej: 3 hab bajo $1M...">
         <div class="btn-group">
             <button class="btn-ai" id="btn-ai">IA SEARCH</button>
             <button class="btn-reset" id="btn-todos">TODOS</button>
         </div>
-        <div id="ai-status" style="font-size:10px; text-align:center; margin-top:8px; color:#888;">Listo</div>
+        <div id="ai-status">Listo para conectar</div>
     </div>
     <div id="results">
-        <p style="text-align:center; color:#ccc; margin-top:50px;">Cargando sistema...</p>
+        <p style="text-align:center; color:#ccc; margin-top:50px;">Haz clic en TODOS para iniciar.</p>
     </div>
 </div>
 
@@ -52,25 +54,24 @@
 
     let map, markers = [];
 
-    // Función de inicialización forzada
     function initMap() {
-        console.log("Iniciando Mapa...");
-        const aventura = { lat: 25.9565, lng: -80.1392 };
         map = new google.maps.Map(document.getElementById("map"), {
-            center: aventura,
+            center: { lat: 25.9565, lng: -80.1392 },
             zoom: 14,
             mapId: MAP_ID
         });
-        document.getElementById('results').innerHTML = "<p style='text-align:center; color:#888;'>Mapa cargado. Presiona TODOS para ver inventario.</p>";
     }
 
     async function fetchMLS(filters = null) {
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "Consultando Miami MLS...";
+        const status = document.getElementById('ai-status');
+        resultsDiv.innerHTML = "Buscando...";
         markers.forEach(m => m.setMap(null));
         markers = [];
 
-        let filterUrl = "City eq 'Aventura' and MlsStatus eq 'Active'";
+        // Filtro ultra-flexible: Aventura por ciudad O por código postal principal
+        let filterUrl = "(City eq 'Aventura' or PostalCode eq '33180') and MlsStatus eq 'Active'";
+        
         if(filters) {
             if(filters.maxPrice) filterUrl += ` and ListPrice le ${filters.maxPrice}`;
             if(filters.beds) filterUrl += ` and BedroomsTotal ge ${filters.beds}`;
@@ -83,45 +84,24 @@
             const blob = await resp.json();
             const data = JSON.parse(blob.contents);
 
-            resultsDiv.innerHTML = "";
             if(!data.value || data.value.length === 0) {
-                resultsDiv.innerHTML = "No hay resultados activos.";
-                return;
+                resultsDiv.innerHTML = "No se encontraron resultados en Aventura. Intentando búsqueda general...";
+                // Fallback: Si no hay en Aventura, trae los 5 más recientes de Miami para probar el Token
+                const backupApi = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=MlsStatus eq 'Active'&$top=5`;
+                const bResp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(backupApi)}`);
+                const bBlob = await bResp.json();
+                const bData = JSON.parse(bBlob.contents);
+                render(bData.value);
+            } else {
+                render(data.value);
             }
-
-            data.value.forEach(prop => {
-                const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
-                if(isNaN(pos.lat)) return;
-                const marker = new google.maps.Marker({ position: pos, map: map });
-                markers.push(marker);
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/300x150'}">
-                    <div class="price">$${prop.ListPrice.toLocaleString()}</div>
-                    <div style="font-size:12px;">${prop.UnparsedAddress}</div>
-                `;
-                card.onclick = () => map.panTo(pos);
-                resultsDiv.appendChild(card);
-            });
         } catch (e) {
-            resultsDiv.innerHTML = "Error de conexión MLS.";
+            resultsDiv.innerHTML = "Error de conexión con el MLS.";
         }
     }
 
-    // Configuración de botones
-    window.onload = () => {
-        document.getElementById('btn-todos').onclick = () => fetchMLS();
-        document.getElementById('btn-ai').onclick = async () => {
-            const q = document.getElementById('ai-input').value;
-            if(!q) return;
-            // Aquí iría el llamado a Gemini (askGemini)
-            fetchMLS(); 
-        };
-    };
-</script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap" async defer></script>
-
-</body>
-</html>
+    function render(props) {
+        const resultsDiv = document.getElementById('results');
+        resultsDiv.innerHTML = "";
+        props.forEach(prop => {
+            const pos = { lat: parseFloat(prop.
