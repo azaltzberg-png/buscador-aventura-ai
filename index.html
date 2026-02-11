@@ -3,130 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aventura Real Estate AI</title>
+    <title>Aventura Real Estate AI | Adonait</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #1a1a1a; --accent: #c5a059; }
-        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f0f0f0; }
+        :root { --primary: #1a1a1a; --accent: #c5a059; --bg: #f4f4f4; }
+        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
         
         #ui-panel { width: 380px; background: white; z-index: 100; box-shadow: 2px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; }
-        .search-box { padding: 20px; border-bottom: 1px solid #eee; }
+        .header { background: var(--primary); color: white; padding: 25px 20px; text-align: center; border-bottom: 4px solid var(--accent); }
         
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; outline: none; }
-        input:focus { border-color: var(--accent); }
+        .search-box { padding: 20px; background: #fff; border-bottom: 1px solid #eee; }
+        input { width: 100%; padding: 14px; border: 2px solid #f0f0f0; border-radius: 10px; margin-bottom: 10px; box-sizing: border-box; font-family: inherit; transition: 0.3s; }
+        input:focus { border-color: var(--accent); outline: none; background: #fffdf8; }
         
-        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
-        button:hover { background: #a68545; }
-        
-        #results { flex-grow: 1; overflow-y: auto; padding: 15px; background: #fdfdfd; }
-        #map { flex-grow: 1; height: 100%; }
+        .btn-group { display: flex; gap: 5px; }
+        button { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.8rem; transition: 0.3s; }
+        .btn-ai { background: var(--accent); color: white; flex: 2; }
+        .btn-ai:hover { background: #a68545; }
+        .btn-reset { background: #eee; color: #666; }
 
-        .card { background: white; border-radius: 12px; padding: 10px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .card img { width: 100%; border-radius: 8px; height: 160px; object-fit: cover; background: #f0f0f0; }
-        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; margin: 5px 0; }
-        .address { font-size: 0.85rem; color: #444; font-weight: 500; }
-        .details { font-size: 0.75rem; color: #888; margin-top: 5px; }
-        
-        .loading-text { text-align: center; color: #888; margin-top: 50px; font-size: 0.9rem; }
+        #ai-status { font-size: 0.7rem; color: #888; margin-top: 8px; text-align: center; height: 15px; }
+        #results { flex-grow: 1; overflow-y: auto; padding: 15px; }
+        #map { flex-grow: 1; }
+
+        .card { background: white; border-radius: 15px; padding: 12px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; transition: 0.3s; }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 10px; height: 170px; object-fit: cover; background: #f9f9f9; }
+        .price { color: var(--accent); font-weight: 600; font-size: 1.3rem; margin: 8px 0 2px 0; }
+        .address { font-size: 0.85rem; color: #333; font-weight: 500; }
+        .details { font-size: 0.75rem; color: #999; margin-top: 6px; border-top: 1px solid #f0f0f0; padding-top: 6px; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
     <div class="header">
-        <h2 style="margin:0; letter-spacing: 1px;">AVENTURA LIVE</h2>
-        <small style="opacity: 0.8;">Buscador Inteligente MLS</small>
+        <h2 style="margin:0; font-size: 1.4rem;">AVENTURA AI</h2>
+        <small style="letter-spacing: 1px;">SISTEMA INTELIGENTE MLS</small>
     </div>
     <div class="search-box">
-        <input type="text" id="ai-input" placeholder="Ej: Condos frente al mar...">
-        <button id="btn-buscar">BUSCAR EN AVENTURA</button>
+        <input type="text" id="ai-input" placeholder="Ej: Condos de 3 hab bajo $1.2M">
+        <div class="btn-group">
+            <button class="btn-ai" id="btn-ai">PREGUNTAR A IA</button>
+            <button class="btn-reset" id="btn-todos">TODOS</button>
+        </div>
+        <div id="ai-status">Listo para buscar</div>
     </div>
     <div id="results">
-        <div class="loading-text">Cargando mapa y sistema...</div>
+        <p style="text-align:center; color:#ccc; margin-top:50px;">Escribe lo que buscas para comenzar.</p>
     </div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    let map;
-    let markers = [];
-    const SERVER_TOKEN = '5e8c97e2f82bfeedf093b27b03c8acbd';
+    // CREDENCIALES
+    const GEMINI_KEY = 'AIzaSyDsLpw2WeHA6fwjZKpwZfXRxk8nMipQrts'; 
+    const MLS_TOKEN = '5e8c97e2f82bfeedf093b27b03c8acbd';
     const MAP_ID = 'da9b6acc1483c1e535943ad2';
 
-    // Inicializar Google Maps
+    let map, markers = [];
+
     function initMap() {
-        const aventuraPos = { lat: 25.9565, lng: -80.1392 };
         map = new google.maps.Map(document.getElementById("map"), {
-            center: aventuraPos,
+            center: { lat: 25.9565, lng: -80.1392 },
             zoom: 14,
-            mapId: MAP_ID,
-            disableDefaultUI: false,
-            zoomControl: true
+            mapId: MAP_ID
         });
-        document.getElementById('results').innerHTML = '<div class="loading-text">Listo. Presiona el botón para cargar propiedades.</div>';
     }
 
-    // Consultar el MLS
-    async function fetchMLS() {
+    async function askGemini(query) {
+        const status = document.getElementById('ai-status');
+        status.innerText = "Gemini analizando tu búsqueda...";
+
+        const prompt = `Eres un experto inmobiliario en Miami. El usuario busca en Aventura: "${query}". 
+        Extrae los filtros técnicos. Responde EXCLUSIVAMENTE un objeto JSON puro (sin markdown) con estos campos:
+        "maxPrice" (número), "minPrice" (número), "beds" (número). Si no se menciona un campo, pon null.`;
+
+        try {
+            const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+            const data = await resp.json();
+            const text = data.candidates[0].content.parts[0].text;
+            // Limpiamos posible basura de la respuesta
+            const cleanJson = text.replace(/```json|```/g, "").trim();
+            return JSON.parse(cleanJson);
+        } catch (e) {
+            console.error("Error Gemini:", e);
+            return null;
+        }
+    }
+
+    async function fetchMLS(filters = null) {
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = '<div class="loading-text">Conectando con el MLS de Miami...</div>';
+        const status = document.getElementById('ai-status');
+        resultsDiv.innerHTML = "<p style='text-align:center;'>Consultando MLS de Miami...</p>";
         
-        // Limpiar mapa
         markers.forEach(m => m.setMap(null));
         markers = [];
 
-        try {
-            // URL con filtro de ciudad y estado activo
-            const apiTarget = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${SERVER_TOKEN}&$filter=City eq 'Aventura' and MlsStatus eq 'Active'&$top=20`;
-            
-            // Usamos AllOrigins como proxy para evitar el bloqueo CORS
-            const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
-            
-            if (!response.ok) throw new Error("Error en la respuesta del servidor");
-            
-            const dataObj = await response.json();
-            const data = JSON.parse(dataObj.contents);
+        let filterUrl = "City eq 'Aventura' and MlsStatus eq 'Active'";
+        if(filters) {
+            if(filters.maxPrice) filterUrl += ` and ListPrice le ${filters.maxPrice}`;
+            if(filters.minPrice) filterUrl += ` and ListPrice ge ${filters.minPrice}`;
+            if(filters.beds) filterUrl += ` and BedroomsTotal ge ${filters.beds}`;
+        }
 
-            if (!data.value || data.value.length === 0) {
-                resultsDiv.innerHTML = '<div class="loading-text">No se encontraron propiedades activas en Aventura en este momento.</div>';
+        try {
+            const apiTarget = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=${encodeURIComponent(filterUrl)}&$top=20`;
+            const proxy = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
+            const blob = await proxy.json();
+            const data = JSON.parse(blob.contents);
+
+            resultsDiv.innerHTML = "";
+            if(!data.value.length) {
+                resultsDiv.innerHTML = "<p style='text-align:center;'>No se encontraron propiedades con esos filtros.</p>";
+                status.innerText = "Sin resultados";
                 return;
             }
 
-            resultsDiv.innerHTML = ""; // Limpiar panel
-
             data.value.forEach(prop => {
-                const lat = parseFloat(prop.Latitude);
-                const lng = parseFloat(prop.Longitude);
-                
-                if (isNaN(lat) || isNaN(lng)) return;
+                const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
+                if(isNaN(pos.lat)) return;
 
-                const pos = { lat, lng };
-
-                // Crear marcador en el mapa
-                const marker = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    title: prop.UnparsedAddress,
-                    animation: google.maps.Animation.DROP
-                });
+                const marker = new google.maps.Marker({ position: pos, map: map, animation: google.maps.Animation.DROP });
                 markers.push(marker);
 
-                // Crear tarjeta en la lista
-                const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(prop.ListPrice);
-                const imgUrl = prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250?text=Aventura+Property';
-                
                 const card = document.createElement('div');
                 card.className = 'card';
-                card.innerHTML = `
-                    <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/400x250?text=No+Image+Available'">
-                    <div class="price">${price}</div>
-                    <div class="address">${prop.UnparsedAddress}</div>
-                    <div class="details">
-                        ${prop.BedroomsTotal || '?'} Bed | ${prop.BathroomsFullTotal || '?'} Bath | ${prop.LivingArea || '?'} SqFt
-                    </div>
-                `;
+                const priceFormatted = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(prop.ListPrice);
                 
-                card.onclick = ()
+                card.innerHTML = `
+                    <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250?text=No+Photo'}">
+                    <div class="price">${priceFormatted}</div>
+                    <div class="address">${prop.UnparsedAddress}</div>
+                    <div class="details">${prop.BedroomsTotal || 0} Hab | ${prop.BathroomsFullTotal || 0} Baños | ${prop.LivingArea || 0} SqFt</div>
+                `;
+                card.onclick = () => { map.setZoom(17); map.panTo(pos); };
+                resultsDiv.appendChild(card);
+            });
+            status.innerText = filters ? "Filtros IA aplicados" : "Mostrando todo en Aventura";
+        } catch (e) {
+            resultsDiv.innerHTML = "Error al conectar con el servidor MLS.";
+        }
+    }
+
+    window.onload = () => {
+        document.getElementById('btn-todos').onclick = () => fetchMLS();
+        document.getElementById('btn-ai').onclick = async () => {
+            const q = document.getElementById('ai-input').value;
+            if(!q) return;
+            const f = await askGemini(q);
+            fetchMLS(f);
+        };
+    };
+</script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap" async defer></script>
+</body>
+</html>
