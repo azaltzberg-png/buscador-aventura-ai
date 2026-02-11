@@ -44,14 +44,13 @@
         <div id="ai-status">Sistema listo</div>
     </div>
     <div id="results">
-        <p style="text-align:center; color:#ccc; margin-top:50px;">Cargando interfaz...</p>
+        <p style="text-align:center; color:#ccc; margin-top:50px;">Presiona "TODOS" para ver propiedades actuales.</p>
     </div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    // CREDENCIALES
     const GEMINI_KEY = 'AIzaSyDsLpw2WeHA6fwjZKpwZfXRxk8nMipQrts'; 
     const MLS_TOKEN = '5e8c97e2f82bfeedf093b27b03c8acbd';
     const MAP_ID = 'da9b6acc1483c1e535943ad2';
@@ -64,98 +63,78 @@
             zoom: 14,
             mapId: MAP_ID
         });
-        document.getElementById('results').innerHTML = "<p style='text-align:center; color:#888;'>Usa la barra superior para buscar propiedades en Aventura.</p>";
     }
 
     async function askGemini(query) {
         const status = document.getElementById('ai-status');
         status.innerText = "Gemini analizando tu búsqueda...";
-
-        const prompt = `Extrae filtros de búsqueda para Aventura, Florida de este texto: "${query}". 
-        Responde SOLO un JSON con: {"maxPrice": num, "minPrice": num, "beds": num}. 
-        Si no hay datos usa null. No escribas nada más.`;
-
+        const prompt = `Extrae filtros de búsqueda para Aventura, Florida de este texto: "${query}". Responde SOLO un JSON con: {"maxPrice": num, "minPrice": num, "beds": num}. Si no hay datos usa null.`;
         try {
             const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
+                method: "POST", headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
             const data = await resp.json();
             const text = data.candidates[0].content.parts[0].text;
             return JSON.parse(text.replace(/```json|```/g, "").trim());
-        } catch (e) {
-            console.error("Gemini Error:", e);
-            return null;
-        }
+        } catch (e) { return null; }
     }
 
     async function fetchMLS(filters = null) {
         const resultsDiv = document.getElementById('results');
         const status = document.getElementById('ai-status');
-        resultsDiv.innerHTML = "<p style='text-align:center;'>Consultando base de datos MLS...</p>";
+        resultsDiv.innerHTML = "<p style='text-align:center;'>Buscando en Aventura...</p>";
         
         markers.forEach(m => m.setMap(null));
         markers = [];
 
-        let filterUrl = "City eq 'Aventura' and MlsStatus eq 'Active'";
+        // FILTRO MEJORADO: Busca por Ciudad O por Código Postal de Aventura
+        let filterUrl = "(City eq 'Aventura' or PostalCode eq '33180') and MlsStatus eq 'Active'";
+        
         if(filters) {
             if(filters.maxPrice) filterUrl += ` and ListPrice le ${filters.maxPrice}`;
             if(filters.minPrice) filterUrl += ` and ListPrice ge ${filters.minPrice}`;
             if(filters.beds) filterUrl += ` and BedroomsTotal ge ${filters.beds}`;
         }
 
-        const apiTarget = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=${encodeURIComponent(filterUrl)}&$top=20`;
+        const apiTarget = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${MLS_TOKEN}&$filter=${encodeURIComponent(filterUrl)}&$top=25`;
         
-        // Intentamos con AllOrigins
         try {
             const resp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
             const blob = await resp.json();
             const data = JSON.parse(blob.contents);
-            renderCards(data.value);
+
+            if(!data.value || data.value.length === 0) {
+                resultsDiv.innerHTML = "<p style='text-align:center;'>No se encontraron propiedades. Intenta con filtros más amplios.</p>";
+                status.innerText = "Sin resultados";
+                return;
+            }
+
+            resultsDiv.innerHTML = "";
+            data.value.forEach(prop => {
+                const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
+                if(isNaN(pos.lat)) return;
+
+                const marker = new google.maps.Marker({ position: pos, map: map, animation: google.maps.Animation.DROP });
+                markers.push(marker);
+
+                const card = document.createElement('div');
+                card.className = 'card';
+                const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(prop.ListPrice);
+                
+                card.innerHTML = `
+                    <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250?text=Aventura+Listing'}">
+                    <div class="price">${price}</div>
+                    <div class="address">${prop.UnparsedAddress}</div>
+                    <div class="details">${prop.BedroomsTotal || 0} Hab | ${prop.BathroomsFullTotal || 0} Baños</div>
+                `;
+                card.onclick = () => { map.setZoom(17); map.panTo(pos); };
+                resultsDiv.appendChild(card);
+            });
             status.innerText = filters ? "Filtros IA aplicados" : "Mostrando todo en Aventura";
         } catch (e) {
-            console.log("Primer proxy falló, intentando respaldo...");
-            // Backup Proxy si el primero falla
-            try {
-                const backupResp = await fetch(`https://corsproxy.io/?${encodeURIComponent(apiTarget)}`);
-                const data = await backupResp.json();
-                renderCards(data.value);
-            } catch (e2) {
-                resultsDiv.innerHTML = "<p style='color:red; text-align:center;'>Error de conexión con MLS. Reintenta en un momento.</p>";
-            }
+            resultsDiv.innerHTML = "<p style='text-align:center; color:red;'>Error de conexión. Reintenta.</p>";
         }
-    }
-
-    function renderCards(properties) {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "";
-        
-        if(!properties || properties.length === 0) {
-            resultsDiv.innerHTML = "<p style='text-align:center;'>No se encontraron propiedades.</p>";
-            return;
-        }
-
-        properties.forEach(prop => {
-            const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
-            if(isNaN(pos.lat)) return;
-
-            const marker = new google.maps.Marker({ position: pos, map: map, animation: google.maps.Animation.DROP });
-            markers.push(marker);
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(prop.ListPrice);
-            
-            card.innerHTML = `
-                <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250?text=Aventura+Listing'}">
-                <div class="price">${price}</div>
-                <div class="address">${prop.UnparsedAddress}</div>
-                <div class="details">${prop.BedroomsTotal || 0} Hab | ${prop.BathroomsFullTotal || 0} Baños | ${prop.LivingArea || 0} SqFt</div>
-            `;
-            card.onclick = () => { map.setZoom(17); map.panTo(pos); };
-            resultsDiv.appendChild(card);
-        });
     }
 
     window.onload = () => {
