@@ -6,8 +6,8 @@
     <title>Adonait Business LLC | Broker Alberto Zaltzberg</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --primary: #0f172a; --accent: #c5a059; --text: #334155; }
-        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; background: #f1f5f9; overflow: hidden; }
+        :root { --primary: #0f172a; --accent: #c5a059; --bg: #f1f5f9; }
+        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--bg); overflow: hidden; }
         
         #ui-panel { width: 380px; background: white; z-index: 100; box-shadow: 10px 0 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .header { background: var(--primary); color: white; padding: 30px 20px; text-align: center; border-bottom: 5px solid var(--accent); }
@@ -16,7 +16,7 @@
 
         .broker-tag { padding: 10px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px; text-align: center; color: #64748b; }
         
-        .search-box { padding: 20px; }
+        .search-box { padding: 20px; background: #fff; }
         input { width: 100%; padding: 15px; border: 2px solid #f1f5f9; border-radius: 12px; box-sizing: border-box; font-family: inherit; font-size: 14px; }
         button { width: 100%; margin-top: 10px; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.3s; }
         button:hover { background: var(--accent); }
@@ -32,121 +32,4 @@
         #map { flex-grow: 1; }
 
         .ws-btn { position: fixed; bottom: 25px; right: 25px; background: #25d366; color: white; padding: 15px 25px; border-radius: 50px; text-decoration: none; font-weight: 700; z-index: 1000; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 10px; }
-        #status-indicator { font-size: 10px; text-align: center; margin-top: 10px; font-weight: 600; text-transform: uppercase; }
-    </style>
-</head>
-<body>
-
-<a href="https://wa.me/19545887564" class="ws-btn" target="_blank">
-    <span>CONTACTAR A ALBERTO</span>
-</a>
-
-<div id="ui-panel">
-    <div class="header">
-        <h1>ADONAIT BUSINESS LLC</h1>
-        <p>Aventura AI Real Estate</p>
-    </div>
-    
-    <div class="broker-tag">
-        BROKER: ALBERTO ZALTZBERG | 954-588-7564
-    </div>
-    
-    <div class="search-box">
-        <input type="text" id="ai-input" placeholder="¿Qué buscas en Aventura?">
-        <button id="btn-search">BUSCAR PROPIEDADES</button>
-        <div id="status-indicator" style="color: #94a3b8;">Iniciando Sistema...</div>
-    </div>
-
-    <div id="results"></div>
-</div>
-
-<div id="map"></div>
-
-<script>
-    // NUEVOS TOKENS ACTUALIZADOS - ADONAIT BUSINESS LLC
-    const BROWSER_TOKEN = 'ef52c732beb2036c9168768f7b5246cc';
-    const GEMINI_KEY = 'AIzaSyDsLpw2WeHA6fwjZKpwZfXRxk8nMipQrts';
-    
-    let map, markers = [];
-
-    // Propiedades de respaldo mientras Bridge activa el Dataset
-    const backupProps = [
-        { UnparsedAddress: "Prive Island Residence, Aventura", ListPrice: 4500000, Latitude: 25.9450, Longitude: -80.1300, img: "https://images.unsplash.com/photo-1600607687940-c524774d3989?w=600" },
-        { UnparsedAddress: "Echo Aventura Luxury Condo", ListPrice: 3250000, Latitude: 25.9491, Longitude: -80.1360, img: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=600" },
-        { UnparsedAddress: "Turnberry Ocean Club", ListPrice: 5900000, Latitude: 25.9620, Longitude: -80.1200, img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600" }
-    ];
-
-    function initMap() {
-        map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: 25.9565, lng: -80.1392 },
-            zoom: 14
-        });
-        fetchMLS();
-    }
-
-    async function fetchMLS() {
-        const resultsDiv = document.getElementById('results');
-        const status = document.getElementById('status-indicator');
-        resultsDiv.innerHTML = "Sincronizando con el MLS de Miami...";
-
-        // Intentamos conectar con el dataset oficial
-        const filter = encodeURIComponent("City eq 'Aventura' and MlsStatus eq 'Active'");
-        const url = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${BROWSER_TOKEN}&$filter=${filter}&$top=15`;
-
-        try {
-            const resp = await fetch(url);
-            const data = await resp.json();
-
-            if (data.error && data.error.code === 404) {
-                throw new Error("Dataset en proceso de vinculación");
-            }
-
-            if (data.value && data.value.length > 0) {
-                renderList(data.value);
-                status.innerHTML = "<span style='color:#10b981'>● ADONAIT SYSTEM LIVE</span>";
-            } else {
-                throw new Error("No Data");
-            }
-        } catch (e) {
-            console.log("Modo Showcase activado (Dataset Miami pendiente de activación en Bridge)");
-            renderList(backupProps);
-            status.innerHTML = "<span style='color:#c5a059'>● MODO SHOWCASE (ADONAIT EXCLUSIVE)</span>";
-        }
-    }
-
-    function renderList(props) {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "";
-        markers.forEach(m => m.setMap(null));
-        markers = [];
-
-        props.forEach(p => {
-            const pos = { lat: parseFloat(p.Latitude), lng: parseFloat(p.Longitude) };
-            if (isNaN(pos.lat)) return;
-
-            const marker = new google.maps.Marker({ position: pos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: "#c5a059", fillOpacity: 1, strokeWeight: 2, strokeColor: "#ffffff" } });
-            markers.push(marker);
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            const imageUrl = p.img || (p.Media && p.Media[0] ? p.Media[0].MediaURL : 'https://via.placeholder.com/400x200?text=Adonait+Real+Estate');
-            
-            card.innerHTML = `
-                <img src="${imageUrl}">
-                <div class="card-info">
-                    <div class="card-price">$${p.ListPrice.toLocaleString()}</div>
-                    <div class="card-addr">${p.UnparsedAddress}</div>
-                </div>
-            `;
-            card.onclick = () => { map.setZoom(17); map.panTo(pos); };
-            resultsDiv.appendChild(card);
-        });
-    }
-
-    window.onload = () => {
-        document.getElementById('btn-search').onclick = fetchMLS;
-    };
-</script>
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap" async defer></script>
-</body>
-</html>
+        #status-indicator { font
