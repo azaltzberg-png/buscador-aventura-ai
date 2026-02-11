@@ -7,107 +7,126 @@
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #1a1a1a; --accent: #c5a059; }
-        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; background: #f0f0f0; }
+        
         #ui-panel { width: 380px; background: white; z-index: 100; box-shadow: 2px 0 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .header { background: var(--primary); color: white; padding: 20px; text-align: center; }
         .search-box { padding: 20px; border-bottom: 1px solid #eee; }
-        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; box-sizing: border-box; outline: none; }
+        input:focus { border-color: var(--accent); }
+        
+        button { width: 100%; padding: 12px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s; }
+        button:hover { background: #a68545; }
+        
         #results { flex-grow: 1; overflow-y: auto; padding: 15px; background: #fdfdfd; }
-        #map { flex-grow: 1; background: #e5e7eb; }
-        .card { background: white; border-radius: 12px; padding: 10px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; }
-        .card img { width: 100%; border-radius: 8px; height: 160px; object-fit: cover; }
-        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; }
+        #map { flex-grow: 1; height: 100%; }
+
+        .card { background: white; border-radius: 12px; padding: 10px; margin-bottom: 15px; border: 1px solid #eee; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .card img { width: 100%; border-radius: 8px; height: 160px; object-fit: cover; background: #f0f0f0; }
+        .price { color: var(--accent); font-weight: 600; font-size: 1.2rem; margin: 5px 0; }
+        .address { font-size: 0.85rem; color: #444; font-weight: 500; }
+        .details { font-size: 0.75rem; color: #888; margin-top: 5px; }
+        
+        .loading-text { text-align: center; color: #888; margin-top: 50px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
 <div id="ui-panel">
     <div class="header">
-        <h2 style="margin:0">AVENTURA LIVE</h2>
-        <small>Real-Time MLS Data</small>
+        <h2 style="margin:0; letter-spacing: 1px;">AVENTURA LIVE</h2>
+        <small style="opacity: 0.8;">Buscador Inteligente MLS</small>
     </div>
     <div class="search-box">
-        <input type="text" id="ai-input" placeholder="¿Buscas algo específico?">
-        <button id="btn-buscar">VER PROPIEDADES ACTIVAS</button>
+        <input type="text" id="ai-input" placeholder="Ej: Condos frente al mar...">
+        <button id="btn-buscar">BUSCAR EN AVENTURA</button>
     </div>
     <div id="results">
-        <p style="text-align:center; color:#888; margin-top:50px;">El mapa se está cargando...</p>
+        <div class="loading-text">Cargando mapa y sistema...</div>
     </div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    // Variables globales
     let map;
     let markers = [];
     const SERVER_TOKEN = '5e8c97e2f82bfeedf093b27b03c8acbd';
     const MAP_ID = 'da9b6acc1483c1e535943ad2';
 
-    // 1. FUNCIÓN PARA INICIALIZAR EL MAPA
+    // Inicializar Google Maps
     function initMap() {
-        console.log("Inicializando mapa...");
-        const aventura = { lat: 25.9565, lng: -80.1392 };
+        const aventuraPos = { lat: 25.9565, lng: -80.1392 };
         map = new google.maps.Map(document.getElementById("map"), {
-            center: aventura,
+            center: aventuraPos,
             zoom: 14,
-            mapId: MAP_ID
+            mapId: MAP_ID,
+            disableDefaultUI: false,
+            zoomControl: true
         });
-        document.getElementById('results').innerHTML = "<p style='text-align:center; color:#888;'>Mapa listo. Presiona el botón para buscar.</p>";
+        document.getElementById('results').innerHTML = '<div class="loading-text">Listo. Presiona el botón para cargar propiedades.</div>';
     }
 
-    // 2. FUNCIÓN PARA BUSCAR EN EL MLS
+    // Consultar el MLS
     async function fetchMLS() {
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "<p style='text-align:center;'>Consultando MLS...</p>";
+        resultsDiv.innerHTML = '<div class="loading-text">Conectando con el MLS de Miami...</div>';
         
+        // Limpiar mapa
         markers.forEach(m => m.setMap(null));
         markers = [];
 
         try {
-            const targetUrl = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${SERVER_TOKEN}&$filter=City eq 'Aventura' and MlsStatus eq 'Active'&$top=15`;
-            const proxyUrl = "https://api.allorigins.win/get?url=" + encodeURIComponent(targetUrl);
+            // URL con filtro de ciudad y estado activo
+            const apiTarget = `https://api.bridgedataoutput.com/api/v2/OData/miami/Property?access_token=${SERVER_TOKEN}&$filter=City eq 'Aventura' and MlsStatus eq 'Active'&$top=20`;
             
-            const response = await fetch(proxyUrl);
-            const rawData = await response.json();
-            const data = JSON.parse(rawData.contents);
+            // Usamos AllOrigins como proxy para evitar el bloqueo CORS
+            const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(apiTarget)}`);
+            
+            if (!response.ok) throw new Error("Error en la respuesta del servidor");
+            
+            const dataObj = await response.json();
+            const data = JSON.parse(dataObj.contents);
 
-            resultsDiv.innerHTML = "";
+            if (!data.value || data.value.length === 0) {
+                resultsDiv.innerHTML = '<div class="loading-text">No se encontraron propiedades activas en Aventura en este momento.</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = ""; // Limpiar panel
 
             data.value.forEach(prop => {
-                const pos = { lat: parseFloat(prop.Latitude), lng: parseFloat(prop.Longitude) };
-                if (!pos.lat || !pos.lng) return;
+                const lat = parseFloat(prop.Latitude);
+                const lng = parseFloat(prop.Longitude);
+                
+                if (isNaN(lat) || isNaN(lng)) return;
 
+                const pos = { lat, lng };
+
+                // Crear marcador en el mapa
                 const marker = new google.maps.Marker({
                     position: pos,
                     map: map,
-                    title: prop.UnparsedAddress
+                    title: prop.UnparsedAddress,
+                    animation: google.maps.Animation.DROP
                 });
                 markers.push(marker);
 
+                // Crear tarjeta en la lista
+                const price = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(prop.ListPrice);
+                const imgUrl = prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250?text=Aventura+Property';
+                
                 const card = document.createElement('div');
                 card.className = 'card';
                 card.innerHTML = `
-                    <img src="${prop.Media?.[0]?.MediaURL || 'https://via.placeholder.com/300x150'}">
-                    <div class="price">$${prop.ListPrice.toLocaleString()}</div>
-                    <div style="font-size:0.8rem;">${prop.UnparsedAddress}</div>
+                    <img src="${imgUrl}" onerror="this.src='https://via.placeholder.com/400x250?text=No+Image+Available'">
+                    <div class="price">${price}</div>
+                    <div class="address">${prop.UnparsedAddress}</div>
+                    <div class="details">
+                        ${prop.BedroomsTotal || '?'} Bed | ${prop.BathroomsFullTotal || '?'} Bath | ${prop.LivingArea || '?'} SqFt
+                    </div>
                 `;
-                card.onclick = () => { map.setZoom(17); map.panTo(pos); };
-                resultsDiv.appendChild(card);
-            });
-        } catch (error) {
-            resultsDiv.innerHTML = "Error al cargar datos.";
-        }
-    }
-
-    // 3. ASIGNAR EVENTOS CUANDO LA PÁGINA CARGUE
-    window.onload = function() {
-        document.getElementById('btn-buscar').onclick = fetchMLS;
-    };
-</script>
-
-<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap&v=weekly" async defer></script>
-
-</body>
-</html>
+                
+                card.onclick = ()
