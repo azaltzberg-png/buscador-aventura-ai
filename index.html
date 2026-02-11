@@ -3,219 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adonait Business LLC | Luxury Real Estate Search</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <title>Adonait Business LLC | Advanced Property Search</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --primary: #0f172a; --accent: #c5a059; --text-main: #1e293b;
-            --status-active: #10b981; --status-pending: #f59e0b; --status-closed: #ef4444;
+            --primary: #0f172a; --accent: #c5a059; --bg-light: #f8fafc;
+            --text-dark: #1e293b; --text-muted: #64748b;
         }
-        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background: #ffffff; color: var(--text-main); overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; margin: 0; display: flex; height: 100vh; background: #fff; color: var(--text-dark); overflow: hidden; }
         
-        /* Panel Lateral Minimalista */
-        #ui-panel { width: 400px; background: white; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; }
-        .header { padding: 30px 20px; text-align: center; }
-        .header h1 { margin: 0; font-size: 16px; letter-spacing: 3px; font-weight: 500; color: var(--primary); }
-        .header span { font-size: 10px; color: var(--accent); letter-spacing: 2px; font-weight: 600; text-transform: uppercase; }
+        /* Lateral Search Panel */
+        #ui-panel { width: 440px; background: white; z-index: 100; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; box-shadow: 10px 0 30px rgba(0,0,0,0.02); }
+        .header { padding: 25px 20px 10px; text-align: left; }
+        .header h1 { margin: 0; font-size: 18px; font-weight: 700; color: var(--primary); letter-spacing: -0.5px; }
+        .header span { font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
 
-        .filter-area { padding: 0 20px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        input, select { border: 1px solid #f1f5f9; background: #f8fafc; padding: 12px; border-radius: 8px; font-size: 12px; transition: 0.3s; }
-        input:focus { outline: none; border-color: var(--accent); background: white; }
-        button { grid-column: span 2; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 600; letter-spacing: 1px; }
+        .filter-grid { padding: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-bottom: 1px solid #f1f5f9; }
+        .full { grid-column: span 2; }
+        label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; display: block; }
+        input, select { border: 1px solid #e2e8f0; background: var(--bg-light); padding: 12px; border-radius: 8px; font-size: 13px; width: 100%; box-sizing: border-box; }
+        
+        button#search-btn { grid-column: span 2; background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-weight: 600; margin-top: 10px; transition: 0.3s; }
+        button#search-btn:hover { background: var(--accent); }
 
         #results { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .card { margin-bottom: 25px; cursor: pointer; transition: transform 0.3s ease; }
-        .card:hover { transform: translateY(-5px); }
-        .card img { width: 100%; height: 200px; object-fit: cover; border-radius: 12px; }
-        .card-meta { margin-top: 12px; }
-        .card-price { font-size: 18px; font-weight: 600; }
-        .card-addr { font-size: 13px; color: #64748b; margin-top: 4px; }
+        .card { margin-bottom: 30px; cursor: pointer; }
+        .card img { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; }
+        .card-info { margin-top: 12px; }
+        .card-price { font-size: 20px; font-weight: 700; color: var(--primary); }
+        .card-details { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
-        /* Modal Minimalista */
-        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.98); z-index: 2000; overflow-y: auto; }
-        .modal-container { max-width: 900px; margin: 50px auto; padding: 20px; }
-        .close-modal { position: fixed; top: 30px; right: 40px; font-size: 30px; cursor: pointer; z-index: 2100; font-weight: 200; }
+        /* Modal Full Screen */
+        #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; z-index: 2000; overflow-y: auto; }
+        .modal-inner { max-width: 1100px; margin: 0 auto; padding: 60px 20px; }
+        .close-btn { position: fixed; top: 20px; right: 30px; font-size: 28px; cursor: pointer; font-weight: 200; }
         
-        .modal-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 40px; margin-top: 30px; }
-        .prop-main-img { width: 100%; border-radius: 15px; box-shadow: 0 20px 40px rgba(0,0,0,0.05); }
-        
-        .specs { display: flex; gap: 30px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 20px 0; margin: 20px 0; }
-        .spec-item b { display: block; font-size: 18px; }
-        .spec-item span { font-size: 11px; color: #94a3b8; text-transform: uppercase; }
+        .modal-hero { display: grid; grid-template-columns: 1.5fr 1fr; gap: 50px; }
+        .share-bar { display: flex; gap: 10px; margin-top: 25px; border-top: 1px solid #eee; padding-top: 20px; }
+        .share-btn { padding: 10px 15px; border-radius: 6px; font-size: 11px; text-decoration: none; font-weight: 600; color: white; display: flex; align-items: center; gap: 5px; }
+        .btn-wa { background: #25d366; } .btn-fb { background: #1877f2; } .btn-email { background: #64748b; }
 
-        .disclaimer-box { font-size: 11px; color: #94a3b8; line-height: 1.6; margin-top: 50px; padding: 30px; background: #fbfbfb; border-radius: 10px; }
-        
-        /* Infowindow de Google Maps Custom */
-        .gm-style-iw { padding: 0 !important; border-radius: 10px !important; }
-        .hover-box { width: 200px; padding: 10px; cursor: pointer; }
-        .hover-box img { width: 100%; border-radius: 5px; }
+        .specs-luxe { display: flex; gap: 40px; margin: 30px 0; padding: 20px 0; border-top: 1px solid #f1f5f9; border-bottom: 1px solid #f1f5f9; }
+        .specs-luxe b { font-size: 24px; display: block; }
+        .specs-luxe span { font-size: 11px; color: var(--text-muted); text-transform: uppercase; }
 
-        #map { flex-grow: 1; background: #ebf1f3; }
-        .ws-button { position: fixed; bottom: 30px; right: 30px; background: #25d366; color: white; padding: 15px 30px; border-radius: 50px; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: 0 10px 20px rgba(37,211,102,0.3); z-index: 1000; }
+        #map { flex-grow: 1; }
     </style>
 </head>
 <body>
 
 <div id="modal">
-    <div class="close-modal" onclick="closeModal()">✕</div>
-    <div class="modal-container" id="modal-data"></div>
+    <div class="close-btn" onclick="closeModal()">✕</div>
+    <div class="modal-inner" id="modal-content"></div>
 </div>
-
-<a href="https://wa.me/19545887564" class="ws-button" target="_blank">WhatsApp Alberto</a>
 
 <div id="ui-panel">
     <div class="header">
         <h1>ADONAIT BUSINESS LLC</h1>
-        <span>Alberto Zaltzberg | Broker</span>
+        <span>Alberto Zaltzberg | Premier Brokerage</span>
     </div>
-    <div class="filter-area">
-        <select id="f-trans" class="full-width">
-            <option value="Active">En Venta/Renta</option>
-            <option value="Closed">Vendidas (Recently Sold)</option>
-        </select>
-        <input type="text" id="f-zip" placeholder="ZIP Code">
-        <select id="f-radius">
-            <option value="0">Este área</option>
-            <option value="5">A 5 millas</option>
-            <option value="10">A 10 millas</option>
-        </select>
-        <input type="number" id="f-price" placeholder="Precio Máximo $" class="full-width">
-        <button onclick="applyFilters()">EXPLORAR PROPIEDADES</button>
+    
+    <div class="filter-grid">
+        <div class="full">
+            <label>Tipo de Operación</label>
+            <select id="f-type">
+                <option value="Venta">Comprar (Sale)</option>
+                <option value="Renta">Rentar (Lease)</option>
+            </select>
+        </div>
+        <div class="full">
+            <label>Localización (Ciudad, Zip, Edificio o Escuela)</label>
+            <input type="text" id="f-loc" placeholder="Ej: Aventura, 33160, Williams Island...">
+        </div>
+        <div>
+            <label>Precio Máximo</label>
+            <input type="number" id="f-price" placeholder="Sin límite">
+        </div>
+        <div>
+            <label>Habitaciones</label>
+            <select id="f-beds">
+                <option value="">Cualquiera</option>
+                <option value="1">1+</option>
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="4">4+</option>
+            </select>
+        </div>
+        <div class="full">
+            <label>Tipo de Propiedad</label>
+            <select id="f-prop">
+                <option value="">Todas las Categorías</option>
+                <option value="Residential">Residencial</option>
+                <option value="Condo">Condominio / Apt</option>
+                <option value="Single Family">Casa Sola</option>
+            </select>
+        </div>
+        <button id="search-btn" onclick="applyFilters()">BUSCAR PROPIEDADES</button>
     </div>
+
     <div id="results"></div>
 </div>
 
 <div id="map"></div>
 
 <script>
-    const BROWSER_TOKEN = 'ef52c732beb2036c9168768f7b5246cc';
-    let map, markers = [], currentData = [], activeInfoWindow;
+    const TOKEN = 'ef52c732beb2036c9168768f7b5246cc';
+    let map, markers = [], currentData = [];
 
     function initMap() {
         map = new google.maps.Map(document.getElementById("map"), {
             center: { lat: 25.9565, lng: -80.1392 },
             zoom: 13,
-            styles: [{ "featureType": "water", "stylers": [{ "color": "#e9e9e9" }, { "visibility": "on" }] }] // Mapa tono grisáceo elegante
+            disableDefaultUI: true,
+            styles: [{ "featureType": "all", "elementType": "labels.text.fill", "stylers": [{ "color": "#7c93a3" }] }]
         });
-        applyFilters(); 
+        applyFilters();
     }
 
     async function applyFilters() {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "<p style='text-align:center; font-size:11px; letter-spacing:1px;'>CONECTANDO AL MLS...</p>";
+        const resDiv = document.getElementById('results');
+        resDiv.innerHTML = "<p style='text-align:center; font-size:12px;'>Consultando Miami MLS...</p>";
         
-        const zip = document.getElementById('f-zip').value;
-        const radius = document.getElementById('f-radius').value;
-        const status = document.getElementById('f-trans').value;
+        const type = document.getElementById('f-type').value;
+        const loc = document.getElementById('f-loc').value;
         const price = document.getElementById('f-price').value;
+        const beds = document.getElementById('f-beds').value;
+        const propType = document.getElementById('f-prop').value;
 
-        let filters = [`MlsStatus eq '${status}'`];
-        if(price) filters.push(`ListPrice le ${price}`);
-
-        let url = `https://api.bridgedataoutput.com/api/v2/OData/miamire/Property?access_token=${BROWSER_TOKEN}`;
+        let filters = ["MlsStatus eq 'Active'"];
         
-        if(zip && radius > 0) {
-            url += `&$filter=${encodeURIComponent(filters.join(" and "))}&near=${zip},${radius}`;
-        } else {
-            if(zip) filters.push(`PostalCode eq '${zip}'`);
-            url += `&$filter=${encodeURIComponent(filters.join(" and "))}`;
+        // Lógica Venta vs Renta por precio (estándar MLS)
+        if(type === "Renta") filters.push("ListPrice le 20000");
+        else filters.push("ListPrice gt 20000");
+
+        if(price) filters.push(`ListPrice le ${price}`);
+        if(beds) filters.push(`BedroomsTotal ge ${beds}`);
+        if(propType) filters.push(`contains(PropertySubType, '${propType}')`);
+
+        let url = `https://api.bridgedataoutput.com/api/v2/OData/miamire/Property?access_token=${TOKEN}`;
+        
+        // Búsqueda Inteligente en múltiples campos (Dirección, Ciudad, Edificio, Zip)
+        if(loc) {
+            filters.push(`(contains(City, '${loc}') or contains(PostalCode, '${loc}') or contains(UnparsedAddress, '${loc}') or contains(SubdivisionName, '${loc}'))`);
         }
-        url += `&$top=15&$orderby=ModificationTimestamp desc`;
+
+        url += `&$filter=${encodeURIComponent(filters.join(" and "))}&$top=20&$orderby=ModificationTimestamp desc`;
 
         try {
-            const resp = await fetch(url);
-            const data = await resp.json();
-            currentData = data.value || [];
-            render(currentData);
-        } catch (e) { resultsDiv.innerHTML = "Error de conexión."; }
+            const r = await fetch(url);
+            const d = await r.json();
+            currentData = d.value || [];
+            renderResults();
+        } catch(e) { resDiv.innerHTML = "Error de conexión."; }
     }
 
-    function render(props) {
-        const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "";
+    function renderResults() {
+        const resDiv = document.getElementById('results');
+        resDiv.innerHTML = "";
         markers.forEach(m => m.setMap(null));
 
-        props.forEach((p, index) => {
+        currentData.forEach((p, i) => {
             const pos = { lat: parseFloat(p.Latitude), lng: parseFloat(p.Longitude) };
-            const marker = new google.maps.Marker({ position: pos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 7, fillColor: '#0f172a', fillOpacity: 1, strokeWeight: 2, strokeColor: 'white' } });
+            const m = new google.maps.Marker({ position: pos, map: map, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 6, fillColor: '#0f172a', fillOpacity: 1, strokeWeight: 2, strokeColor: '#fff' } });
             
-            const img = p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x200';
-            const hoverCard = `<div class="hover-box" onclick="showDetail(${index})"><img src="${img}"><div style="font-weight:600; margin-top:5px;">$${p.ListPrice.toLocaleString()}</div><div style="font-size:10px; color:gray;">${p.UnparsedAddress}</div></div>`;
-            
-            const info = new google.maps.InfoWindow({ content: hoverCard });
+            m.addListener("click", () => showDetail(i));
+            markers.push(m);
 
-            marker.addListener("mouseover", () => { info.open(map, marker); });
-            marker.addListener("mouseout", () => { info.close(); });
-            marker.addListener("click", () => { showDetail(index); });
-            markers.push(marker);
-
+            const img = p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x250';
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `<img src="${img}"><div class="card-meta"><div class="card-price">$${p.ListPrice.toLocaleString()}</div><div class="card-addr">${p.UnparsedAddress}</div></div>`;
-            card.onclick = () => { map.panTo(pos); showDetail(index); };
-            resultsDiv.appendChild(card);
+            card.innerHTML = `
+                <img src="${img}">
+                <div class="card-info">
+                    <div class="card-price">$${p.ListPrice.toLocaleString()}</div>
+                    <div class="card-details">${p.BedroomsTotal} Bed | ${p.BathroomsFullTotal} Bath | ${p.LivingArea} SqFt</div>
+                    <div style="font-size:12px; color:#94a3b8; margin-top:4px;">${p.UnparsedAddress}</div>
+                </div>`;
+            card.onclick = () => { map.panTo(pos); showDetail(i); };
+            resDiv.appendChild(card);
         });
     }
 
-    function showDetail(index) {
-        const p = currentData[index];
+    function showDetail(i) {
+        const p = currentData[i];
         const modal = document.getElementById('modal');
-        const content = document.getElementById('modal-data');
+        const cont = document.getElementById('modal-content');
         const img = p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/1200x600';
+        const pageUrl = window.location.href; // El link a tu página
 
-        content.innerHTML = `
-            <div class="modal-grid">
+        cont.innerHTML = `
+            <div class="modal-hero">
                 <div>
-                    <img src="${img}" class="prop-main-img">
-                    <div style="margin-top:30px;">
-                        <h4 style="text-transform:uppercase; font-size:11px; letter-spacing:2px; color:var(--accent);">Descripción</h4>
-                        <p style="line-height:1.8; color:#475569; font-size:15px;">${p.PublicRemarks || 'Contactar para más detalles.'}</p>
+                    <img src="${img}" style="width:100%; border-radius:20px;">
+                    <div class="share-bar">
+                        <span style="font-size:12px; font-weight:700; align-self:center; margin-right:10px;">COMPARTIR:</span>
+                        <a class="share-btn btn-wa" href="https://wa.me/?text=Mira esta propiedad en Miami: ${p.UnparsedAddress} - ${pageUrl}" target="_blank">WhatsApp</a>
+                        <a class="share-btn btn-fb" href="https://www.facebook.com/sharer/sharer.php?u=${pageUrl}" target="_blank">Facebook</a>
+                        <a class="share-btn btn-email" href="mailto:?subject=Propiedad Adonait Business LLC&body=Hola, mira esta propiedad: ${p.UnparsedAddress}. Link: ${pageUrl}">Email</a>
                     </div>
                 </div>
                 <div>
-                    <h1 style="font-size:32px; margin:0;">$${p.ListPrice.toLocaleString()}</h1>
-                    <p style="color:#64748b; font-size:14px; margin:10px 0 30px;">${p.UnparsedAddress}, ${p.City}, FL ${p.PostalCode}</p>
+                    <h1 style="font-size:42px; margin:0;">$${p.ListPrice.toLocaleString()}</h1>
+                    <p style="color:var(--text-muted); font-size:16px;">${p.UnparsedAddress}, ${p.City}, FL</p>
                     
-                    <div class="specs">
-                        <div class="spec-item"><b>${p.BedroomsTotal}</b><span>Camas</span></div>
-                        <div class="spec-item"><b>${p.BathroomsFullTotal}</b><span>Baños</span></div>
-                        <div class="spec-item"><b>${p.LivingArea}</b><span>SqFt</span></div>
+                    <div class="specs-luxe">
+                        <div><b>${p.BedroomsTotal}</b><span>Camas</span></div>
+                        <div><b>${p.BathroomsFullTotal}</b><span>Baños</span></div>
+                        <div><b>${p.LivingArea}</b><span>SqFt</span></div>
                     </div>
 
-                    <div style="margin:40px 0;">
-                        <p style="font-size:12px; font-weight:600; color:var(--primary);">PRESENTADO POR:</p>
-                        <div style="border-left:2px solid var(--accent); padding-left:15px;">
-                            <p style="margin:0; font-size:18px;"><b>Alberto Zaltzberg</b></p>
-                            <p style="margin:5px 0; color:var(--accent); font-size:12px;">Broker | Adonait Business LLC</p>
-                            <p style="margin:0; font-size:13px;">📞 954-588-7564</p>
-                        </div>
+                    <p style="line-height:1.8; color:#475569;">${p.PublicRemarks || 'No hay descripción disponible.'}</p>
+
+                    <div style="background:var(--bg-light); padding:25px; border-radius:15px; margin-top:30px;">
+                        <h4 style="margin:0;">Agente: Alberto Zaltzberg</h4>
+                        <p style="margin:5px 0; color:var(--accent);">954-588-7564 | Broker</p>
+                        <a href="https://wa.me/19545887564" style="display:block; text-align:center; background:var(--primary); color:white; padding:15px; border-radius:8px; text-decoration:none; margin-top:15px; font-weight:700;">SOLICITAR TOUR</a>
                     </div>
 
-                    <a href="https://wa.me/19545887564?text=Alberto, estoy interesado en el ML# ${p.ListingId}" 
-                       style="display:block; text-align:center; background:var(--primary); color:white; text-decoration:none; padding:18px; border-radius:10px; font-weight:600;">
-                       AGENDAR VISITA PRIVADA
-                    </a>
-                    
-                    <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:20px;">Ref: MLS# ${p.ListingId} | Listing Status: ${p.MlsStatus}</p>
+                    <div style="font-size:10px; color:#94a3b8; margin-top:40px; line-height:1.6;">
+                        <p><b>Cortesía de:</b> ${p.ListOfficeName}</p>
+                        <p>Copyright © 2026 Miami REALTORS®. La información se considera confiable pero no garantizada.</p>
+                        <p>MLS# ${p.ListingId} | Actualizado: ${new Date(p.ModificationTimestamp).toLocaleDateString()}</p>
+                    </div>
                 </div>
-            </div>
-
-            <div class="disclaimer-box">
-                <p><b>Listing Courtesy of:</b> ${p.ListOfficeName || 'Miami Association of Realtors'}</p>
-                <p>Copyright © 2026 Miami Association of REALTORS® Regional MLS. All rights reserved. 
-                Information is deemed reliable but not guaranteed. The data relating to real estate for sale on this website comes in part from the Miami Association of REALTORS® MLS. 
-                The information being provided is for consumers' personal, non-commercial use and may not be used for any purpose other than to identify prospective properties consumers may be interested in purchasing.</p>
-                <p>Last MLS Synchronization: ${new Date(p.ModificationTimestamp).toLocaleString()}</p>
             </div>
         `;
         modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
     }
 
-    function closeModal() { 
-        document.getElementById('modal').style.display = 'none'; 
-        document.body.style.overflow = 'auto';
-    }
+    function closeModal() { document.getElementById('modal').style.display = 'none'; }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap" async defer></script>
 </body>
