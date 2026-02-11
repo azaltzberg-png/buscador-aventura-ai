@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adonait Business LLC | Florida Real Estate Search</title>
+    <title>Adonait Business LLC | Florida Global Search</title>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root { --primary: #0f172a; --accent: #c5a059; --light: #f8fafc; }
         body { font-family: 'Montserrat', sans-serif; margin: 0; display: flex; height: 100vh; background: #f1f5f9; overflow: hidden; }
         
-        /* Panel Lateral */
         #ui-panel { width: 420px; background: white; z-index: 100; box-shadow: 10px 0 30px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-bottom: 4px solid var(--accent); }
         
@@ -20,21 +19,18 @@
         button { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.3s; }
         button:hover { background: var(--accent); }
 
-        /* Lista de resultados */
         #results { flex-grow: 1; overflow-y: auto; padding: 15px; }
         .card { background: white; border-radius: 12px; border: 1px solid #eee; margin-bottom: 15px; cursor: pointer; overflow: hidden; transition: 0.2s; }
-        .card:hover { border-color: var(--accent); transform: translateY(-3px); }
         .card img { width: 100%; height: 160px; object-fit: cover; }
         .card-info { padding: 12px; }
         .card-price { font-size: 1.3rem; font-weight: 700; color: var(--primary); }
 
-        /* Modal Ficha Detalle */
         #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background: white; width: 95%; max-width: 850px; max-height: 90vh; border-radius: 20px; overflow-y: auto; position: relative; }
         .close-modal { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; color: white; background: var(--primary); width: 35px; height: 35px; border-radius: 50%; display: flex; justify-content: center; align-items: center; z-index: 10; }
-        .modal-header img { width: 100%; height: 450px; object-fit: cover; }
+        .modal-header img { width: 100%; height: 400px; object-fit: cover; }
         .modal-body { padding: 30px; }
-        .broker-contact-box { background: #f0f4f8; padding: 25px; border-radius: 15px; border-left: 6px solid var(--accent); margin-top: 25px; }
+        .broker-box { background: #f0f4f8; padding: 20px; border-radius: 15px; border-left: 6px solid var(--accent); margin-top: 25px; }
 
         #map { flex-grow: 1; }
         .ws-float { position: fixed; bottom: 25px; right: 25px; background: #25d366; color: white; padding: 16px 28px; border-radius: 50px; text-decoration: none; font-weight: 700; z-index: 1000; box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
@@ -47,29 +43,27 @@
     <div class="modal-content" id="modal-data"></div>
 </div>
 
-<a href="https://wa.me/19545887564" class="ws-float" target="_blank">📲 WhatsApp Alberto</a>
+<a href="https://wa.me/19545887564" class="ws-float" target="_blank">📲 Alberto Zaltzberg</a>
 
 <div id="ui-panel">
     <div class="header">
-        <h1 style="margin:0; font-size:1.1rem; letter-spacing:1px;">ADONAIT BUSINESS LLC</h1>
-        <small style="color:var(--accent); font-weight:700;">ALBERTO ZALTZBERG - BROKER</small>
+        <h1 style="margin:0; font-size:1.1rem;">ADONAIT BUSINESS LLC</h1>
+        <small style="color:var(--accent); font-weight:700;">BROKER ALBERTO ZALTZBERG</small>
     </div>
 
     <div class="filter-area">
-        <input type="text" id="f-city" placeholder="Cualquier Ciudad (Miami, Aventura...)" class="full-width">
-        <input type="text" id="f-zip" placeholder="Zip Code (Ej: 33160)">
+        <input type="text" id="f-city" placeholder="Ciudad (Ej: Miami, Doral)" class="full-width">
+        <input type="text" id="f-zip" placeholder="ZIP Code">
         <select id="f-type">
-            <option value="">Cualquier Tipo</option>
+            <option value="">Todo tipo</option>
             <option value="Residential">Casas</option>
             <option value="Condominium">Condominios</option>
         </select>
         <input type="number" id="f-price" placeholder="Precio Máximo $" class="full-width">
-        <button onclick="applyFilters()" class="full-width">BUSCAR EN TODO EL MLS</button>
+        <button onclick="applyFilters()" class="full-width">BUSCAR PROPIEDADES</button>
     </div>
 
-    <div id="results">
-        <p style="text-align:center; color:#666; margin-top:40px;">Usa los filtros para buscar en toda la Florida.</p>
-    </div>
+    <div id="results"></div>
 </div>
 
 <div id="map"></div>
@@ -80,30 +74,30 @@
 
     function initMap() {
         map = new google.maps.Map(document.getElementById("map"), {
-            center: { lat: 25.7617, lng: -80.1918 }, // Centro en Miami general
+            center: { lat: 25.7617, lng: -80.1918 },
             zoom: 11
         });
-        applyFilters(); // Carga inicial
+        applyFilters(); 
     }
 
     async function applyFilters() {
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = "<p style='text-align:center;'>Consultando base de datos global...</p>";
+        resultsDiv.innerHTML = "<p style='text-align:center;'>Buscando en miamire...</p>";
         
-        let city = document.getElementById('f-city').value;
-        let zip = document.getElementById('f-zip').value;
+        let city = document.getElementById('f-city').value.trim();
+        let zip = document.getElementById('f-zip').value.trim();
         let price = document.getElementById('f-price').value;
         let type = document.getElementById('f-type').value;
 
-        // Construcción Dinámica de Consulta OData
+        // Lógica de filtro: Si no hay ciudad ni zip, busca por precio o general
         let filters = ["MlsStatus eq 'Active'"];
-        if(city) filters.push(`contains(City, '${city}')`);
+        if(city) filters.push(`City eq '${city}'`);
         if(zip) filters.push(`PostalCode eq '${zip}'`);
         if(price) filters.push(`ListPrice le ${price}`);
         if(type) filters.push(`PropertyType eq '${type}'`);
 
         const filterQuery = encodeURIComponent(filters.join(" and "));
-        const url = `https://api.bridgedataoutput.com/api/v2/OData/miamire/Property?access_token=${BROWSER_TOKEN}&$filter=${filterQuery}&$top=30&$orderby=ListDate desc`;
+        const url = `https://api.bridgedataoutput.com/api/v2/OData/miamire/Property?access_token=${BROWSER_TOKEN}&$filter=${filterQuery}&$top=20`;
 
         try {
             const resp = await fetch(url);
@@ -113,10 +107,10 @@
                 currentData = data.value;
                 render(currentData);
             } else {
-                resultsDiv.innerHTML = "<p style='text-align:center;'>No hay resultados con esos filtros. Intenta ampliar la búsqueda.</p>";
+                resultsDiv.innerHTML = "<p style='text-align:center;'>No hay resultados. <br><small>Prueba escribiendo la ciudad con la primera letra en mayúscula (Ej: Miami).</small></p>";
             }
         } catch (e) {
-            resultsDiv.innerHTML = "<p style='text-align:center; color:red;'>Error de conexión con el MLS.</p>";
+            resultsDiv.innerHTML = "<p style='text-align:center;'>Error de conexión.</p>";
         }
     }
 
@@ -129,30 +123,24 @@
         props.forEach((p, index) => {
             if(!p.Latitude) return;
             const pos = { lat: parseFloat(p.Latitude), lng: parseFloat(p.Longitude) };
-            
-            const marker = new google.maps.Marker({ position: pos, map: map, title: p.UnparsedAddress });
+            const marker = new google.maps.Marker({ position: pos, map: map });
             markers.push(marker);
 
             const card = document.createElement('div');
             card.className = 'card';
-            const img = p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x200?text=Adonait+Business+LLC';
+            const img = p.Media?.[0]?.MediaURL || 'https://via.placeholder.com/400x200?text=Adonait+Business';
             card.innerHTML = `
                 <img src="${img}">
                 <div class="card-info">
                     <div class="card-price">$${p.ListPrice.toLocaleString()}</div>
-                    <div style="font-size:12px; color:#444; font-weight:600;">${p.UnparsedAddress}</div>
-                    <div style="font-size:11px; color:#888;">${p.City}, FL ${p.PostalCode}</div>
+                    <div style="font-size:12px; font-weight:600;">${p.UnparsedAddress}</div>
+                    <div style="font-size:11px; color:gray;">${p.City}, FL</div>
                 </div>
             `;
-            card.onclick = () => {
-                map.setZoom(16);
-                map.panTo(pos);
-                showDetail(index);
-            };
+            card.onclick = () => showDetail(index);
             resultsDiv.appendChild(card);
         });
-        
-        // Ajustar mapa para ver todos los resultados
+
         if(markers.length > 0) {
             const bounds = new google.maps.LatLngBounds();
             markers.forEach(m => bounds.extend(m.getPosition()));
@@ -170,25 +158,16 @@
             <div class="modal-header"><img src="${img}"></div>
             <div class="modal-body">
                 <h1 style="color:var(--primary); margin:0;">$${p.ListPrice.toLocaleString()}</h1>
-                <p style="font-size:18px; color:#666;">${p.UnparsedAddress}, ${p.City}, FL ${p.PostalCode}</p>
-                <hr style="border:0; border-top:1px solid #eee; margin:20px 0;">
-                
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap:20px; text-align:center;">
-                    <div style="background:#f8fafc; padding:15px; border-radius:10px;"><b>🛏️ Hab</b><br>${p.BedroomsTotal || 'N/A'}</div>
-                    <div style="background:#f8fafc; padding:15px; border-radius:10px;"><b>🚿 Baños</b><br>${p.BathroomsFullTotal || 'N/A'}</div>
-                    <div style="background:#f8fafc; padding:15px; border-radius:10px;"><b>📐 SqFt</b><br>${p.LivingArea || 'N/A'}</div>
-                    <div style="background:#f8fafc; padding:15px; border-radius:10px;"><b>🏢 Año</b><br>${p.YearBuilt || 'N/A'}</div>
-                </div>
-
-                <p style="margin-top:30px; line-height:1.8; color:#444;">${p.PublicRemarks || 'Contacte al broker para más detalles sobre esta propiedad.'}</p>
-                
-                <div class="broker-contact-box">
-                    <h3 style="margin:0; color:var(--primary);">¿Desea conocer esta propiedad?</h3>
-                    <p>Agende una cita exclusiva con <b>Alberto Zaltzberg</b></p>
-                    <p style="font-size:20px; font-weight:700;">📞 954-588-7564</p>
-                    <a href="https://wa.me/19545887564?text=Hola Alberto, deseo información de: ${p.UnparsedAddress}" 
-                       style="background:#25d366; color:white; padding:15px 30px; border-radius:10px; text-decoration:none; display:inline-block; font-weight:bold; margin-top:10px;">
-                       ENVIAR WHATSAPP AHORA
+                <p>${p.UnparsedAddress}, ${p.City}, FL</p>
+                <hr>
+                <p>${p.PublicRemarks || 'Consulte para más detalles.'}</p>
+                <div class="broker-box">
+                    <h3>¿Te interesa esta propiedad?</h3>
+                    <p><b>Alberto Zaltzberg</b> - Broker</p>
+                    <p>📞 954-588-7564</p>
+                    <a href="https://wa.me/19545887564?text=Alberto, me interesa la propiedad: ${p.UnparsedAddress}" 
+                       style="background:#25d366; color:white; padding:12px 25px; border-radius:10px; text-decoration:none; display:inline-block; font-weight:700;">
+                       HABLAR POR WHATSAPP
                     </a>
                 </div>
             </div>
@@ -197,9 +176,7 @@
     }
 
     function closeModal() { document.getElementById('modal').style.display = 'none'; }
-    window.onclick = (event) => { if (event.target == document.getElementById('modal')) closeModal(); }
 </script>
-
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCFDOG6McuD5d6JUUGi2g5ATLNa7LX1LrQ&callback=initMap" async defer></script>
 </body>
 </html>
